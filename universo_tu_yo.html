@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Universo TÚ ❤️ YO</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; }
+        #info {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 100; color: rgba(255,255,255,0.75);
+            background: rgba(255,255,255,0.07);
+            padding: 7px 20px; border-radius: 999px;
+            backdrop-filter: blur(8px);
+            pointer-events: none; font-size: 13px;
+            font-family: 'Georgia', serif;
+            letter-spacing: 2px;
+            border: 0.5px solid rgba(255,255,255,0.15);
+        }
+        #controls {
+            position: absolute; bottom: 18px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.35); font-size: 11px;
+            font-family: monospace; pointer-events: none;
+        }
+        #intro-overlay {
+            position: fixed; inset: 0; z-index: 200;
+            background: #000;
+            transition: opacity 2.5s ease;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="intro-overlay"></div>
+    <div id="info">✦ TÚ &nbsp;💙🩷&nbsp; YO ✦</div>
+    <div id="controls">🖱 Arrastrar · Scroll: zoom</div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // ── FADE IN ──────────────────────────────────────────────
+        const overlay = document.getElementById('intro-overlay');
+        setTimeout(() => { overlay.style.opacity = '0'; }, 400);
+        setTimeout(() => { overlay.remove(); }, 3200);
+
+        // ── ESCENA ───────────────────────────────────────────────
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x01010f);
+
+        const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 18);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.setPixelRatio(devicePixelRatio);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 1.3;
+        document.body.appendChild(renderer.domElement);
+
+        // ── BLOOM ────────────────────────────────────────────────
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.9, 0.5, 0.1);
+        composer.addPass(bloom);
+
+        // ── CONTROLES ───────────────────────────────────────────
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.zoomSpeed = 1.0;
+        controls.rotateSpeed = 0.7;
+        controls.minDistance = 5;
+        controls.maxDistance = 50;
+
+        // ── TEXTURA ESTRELLA ────────────────────────────────────
+        function makeStarTex() {
+            const c = document.createElement('canvas');
+            c.width = c.height = 64;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(32,32,0,32,32,32);
+            g.addColorStop(0,   'rgba(255,255,255,1)');
+            g.addColorStop(0.2, 'rgba(255,255,255,0.85)');
+            g.addColorStop(0.6, 'rgba(255,255,255,0.15)');
+            g.addColorStop(1,   'rgba(255,255,255,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(c);
+        }
+        const starTex = makeStarTex();
+
+        // ── MATRICES DE LETRAS (15 filas × 11 cols) ─────────────
+        // Definición más alta resolución para mejor legibilidad
+        const GLYPHS = {
+            'T': [
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+            ],
+            'U': [
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [0,1,1,0,0,0,0,0,1,1,0],
+                [0,0,1,1,1,1,1,1,1,0,0],
+                [0,0,0,1,1,1,1,1,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            'Y': [
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [0,1,1,0,0,0,0,0,1,1,0],
+                [0,0,1,1,0,0,0,1,1,0,0],
+                [0,0,0,1,1,0,1,1,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,1,1,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            'O': [
+                [0,0,0,1,1,1,1,1,0,0,0],
+                [0,0,1,1,1,1,1,1,1,0,0],
+                [0,1,1,0,0,0,0,0,1,1,0],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [0,1,1,0,0,0,0,0,1,1,0],
+                [0,0,1,1,1,1,1,1,1,0,0],
+                [0,0,0,1,1,1,1,1,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            // Letras para "siempre"
+            'S': [
+                [0,0,1,1,1,1,1,1,1,0,0],
+                [0,1,1,1,1,1,1,1,1,1,0],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [0,1,1,0,0,0,0,0,0,0,0],
+                [0,0,1,1,1,1,1,0,0,0,0],
+                [0,0,0,1,1,1,1,1,0,0,0],
+                [0,0,0,0,0,0,1,1,1,0,0],
+                [0,0,0,0,0,0,0,0,1,1,0],
+                [0,0,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [0,1,1,0,0,0,0,0,1,1,0],
+                [0,0,1,1,1,1,1,1,1,0,0],
+                [0,0,0,1,1,1,1,1,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            'I': [
+                [0,1,1,1,1,1,1,1,1,1,0],
+                [0,1,1,1,1,1,1,1,1,1,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,0,0,0,0],
+                [0,1,1,1,1,1,1,1,1,1,0],
+                [0,1,1,1,1,1,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            'E': [
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1,0,0],
+                [1,1,1,1,1,1,1,1,1,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            'M': [
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,1,0,0,0,0,0,1,1,1],
+                [1,1,1,1,0,0,0,1,1,1,1],
+                [1,1,0,1,1,0,1,1,0,1,1],
+                [1,1,0,0,1,1,1,0,0,1,1],
+                [1,1,0,0,0,1,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,1,1],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            'P': [
+                [1,1,1,1,1,1,1,0,0,0,0],
+                [1,1,1,1,1,1,1,1,0,0,0],
+                [1,1,0,0,0,0,1,1,1,0,0],
+                [1,1,0,0,0,0,0,1,1,0,0],
+                [1,1,0,0,0,0,0,1,1,0,0],
+                [1,1,0,0,0,0,1,1,1,0,0],
+                [1,1,1,1,1,1,1,1,0,0,0],
+                [1,1,1,1,1,1,1,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+            'R': [
+                [1,1,1,1,1,1,1,0,0,0,0],
+                [1,1,1,1,1,1,1,1,0,0,0],
+                [1,1,0,0,0,0,1,1,1,0,0],
+                [1,1,0,0,0,0,0,1,1,0,0],
+                [1,1,0,0,0,0,0,1,1,0,0],
+                [1,1,0,0,0,0,1,1,1,0,0],
+                [1,1,1,1,1,1,1,1,0,0,0],
+                [1,1,1,1,1,1,1,0,0,0,0],
+                [1,1,0,1,1,0,0,0,0,0,0],
+                [1,1,0,0,1,1,0,0,0,0,0],
+                [1,1,0,0,0,1,1,0,0,0,0],
+                [1,1,0,0,0,0,1,1,0,0,0],
+                [1,1,0,0,0,0,0,1,1,0,0],
+                [1,1,0,0,0,0,0,0,1,1,0],
+                [0,0,0,0,0,0,0,0,0,0,0],
+            ],
+        };
+
+        // ── GENERAR PUNTOS DESDE GLYPH ──────────────────────────
+        function glyphToPoints(char, ox, oy, scale, density) {
+            const mat = GLYPHS[char];
+            if (!mat) return [];
+            const rows = mat.length, cols = mat[0].length;
+            const step = 0.13 * scale;
+            const sx = ox - (cols * step) / 2 + step * 0.5;
+            const sy = oy + (rows * step) / 2 - step * 0.5;
+
+            // Pre-construir mapa de celdas activas para distancia al borde
+            const active = new Set();
+            for (let r = 0; r < rows; r++)
+                for (let c = 0; c < cols; c++)
+                    if (mat[r][c] === 1) active.add(r + ',' + c);
+
+            function isActive(r,c) { return active.has(r+','+c); }
+            // Distancia mínima a celda vacía (0=borde, 1=interior, etc)
+            function edgeDist(r,c) {
+                const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
+                for (const [dr,dc] of neighbors)
+                    if (!isActive(r+dr, c+dc)) return 0;
+                return 1;
+            }
+
+            const pts = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (mat[r][c] !== 1) continue;
+                    const onEdge = edgeDist(r, c) === 0;
+                    for (let k = 0; k < density; k++) {
+                        // Ángulo aleatorio para dispersión no-grid
+                        const angle = Math.random() * Math.PI * 2;
+                        const rnd = Math.random();
+
+                        // Puntos de borde: dispersión asimétrica hacia afuera
+                        // Puntos interiores: más libres, más lejos
+                        let dist;
+                        if (onEdge) {
+                            // 60% cerca, 25% medio, 15% volando lejos
+                            if (rnd < 0.60) dist = Math.random() * step * 0.55;
+                            else if (rnd < 0.85) dist = step * 0.55 + Math.random() * step * 0.7;
+                            else dist = step * 1.2 + Math.random() * step * 1.4;
+                        } else {
+                            // Interior: más libertad, menos geometría
+                            if (rnd < 0.50) dist = Math.random() * step * 0.8;
+                            else if (rnd < 0.80) dist = step * 0.8 + Math.random() * step * 0.9;
+                            else dist = step * 1.5 + Math.random() * step * 1.8;
+                        }
+
+                        // Ruido de Perlin simulado con sumas de senos
+                        const nx = Math.sin(c * 3.7 + k * 1.3) * 0.04 * step;
+                        const ny = Math.cos(r * 2.9 + k * 1.7) * 0.04 * step;
+
+                        pts.push(new THREE.Vector3(
+                            sx + c * step + Math.cos(angle) * dist + nx,
+                            sy - r * step + Math.sin(angle) * dist + ny,
+                            (Math.random() - 0.5) * (0.1 + dist * 0.8)
+                        ));
+                    }
+                }
+            }
+            return pts;
+        }
+
+        // ── CREAR Points DESDE ARRAY ────────────────────────────
+        function makePoints(pts, colorFn, size) {
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(pts.length * 3);
+            const col = new Float32Array(pts.length * 3);
+            pts.forEach((p, i) => {
+                pos[i*3]=p.x; pos[i*3+1]=p.y; pos[i*3+2]=p.z;
+                const [r,g,b] = colorFn(i);
+                col[i*3]=r; col[i*3+1]=g; col[i*3+2]=b;
+            });
+            geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+            geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+            return new THREE.Points(geo, new THREE.PointsMaterial({
+                size, vertexColors: true, transparent: true,
+                blending: THREE.AdditiveBlending, depthWrite: false,
+                sizeAttenuation: true, map: starTex, alphaTest: 0.05
+            }));
+        }
+
+        const blueColor  = () => [0.35 + Math.random()*0.2, 0.6 + Math.random()*0.2, 1.0];
+        const pinkColor  = () => [1.0, 0.45 + Math.random()*0.15, 0.85 + Math.random()*0.1];
+        const goldColor  = () => [1.0, 0.85 + Math.random()*0.1, 0.4 + Math.random()*0.2];
+        const whiteColor = () => { const b = 0.9 + Math.random()*0.1; return [b, b*0.95, b]; };
+
+        // ── PALABRAS "TÚ" ────────────────────────────────────────
+        // escala 1.2, densidad 20 puntos por celda activa
+        const ptsT  = glyphToPoints('T', -2.9, 1.5, 1.2, 60);
+        const ptsU  = glyphToPoints('U', -1.2, 1.5, 1.2, 60);
+        const wordTu = makePoints([...ptsT, ...ptsU], blueColor, 0.10);
+        scene.add(wordTu);
+
+        // ── PALABRA "YO" ─────────────────────────────────────────
+        const ptsY  = glyphToPoints('Y',  0.7, 1.5, 1.2, 60);
+        const ptsO  = glyphToPoints('O',  2.45, 1.5, 1.2, 60);
+        const wordYo = makePoints([...ptsY, ...ptsO], pinkColor, 0.10);
+        scene.add(wordYo);
+
+        // ── FRASE "SIEMPRE" (más pequeña, centrada abajo) ────────
+        const siempreLetras = ['S','I','E','M','P','R','E'];
+        const siempreScale = 0.62;
+        const siempreSpacing = 1.22;
+        const siempreStartX = -((siempreLetras.length - 1) * siempreSpacing) / 2;
+        let siemprePts = [];
+        siempreLetras.forEach((ch, idx) => {
+            const ox = siempreStartX + idx * siempreSpacing;
+            siemprePts = siemprePts.concat(glyphToPoints(ch, ox, -0.9, siempreScale, 35));
+        });
+        const wordSiempre = makePoints(siemprePts, goldColor, 0.08);
+        scene.add(wordSiempre);
+
+        // ── CORAZÓN CENTRAL ──────────────────────────────────────
+        function heartPoints(cx, cy, cz, scale, n) {
+            const pts = [];
+            for (let i = 0; i < n; i++) {
+                const t = Math.random() * Math.PI * 2;
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+                const fill = Math.random() > 0.55 ? (0.2 + Math.random() * 0.8) : 1;
+                x *= 0.065 * scale * fill;
+                y *= 0.065 * scale * fill;
+                pts.push(new THREE.Vector3(cx + x, cy + y, cz + (Math.random()-0.5)*0.6));
+            }
+            return pts;
+        }
+        const hPts = heartPoints(0, 0.45, 0, 1.1, 3500);
+        const heartObj = makePoints(hPts, () => {
+            const v = 0.9 + Math.random()*0.1;
+            return [v, v*0.35, v*0.5];
+        }, 0.11);
+        scene.add(heartObj);
+
+        // ── ANILLO DE ASTEROIDES (galaxia bajo palabras) ─────────
+        // ── ESPIRALES (galaxia con brazos) ───────────────────────
+        function makeSpiralGalaxy(n, arms) {
+            const pts = [];
+            for (let i = 0; i < n; i++) {
+                const arm = Math.floor(Math.random() * arms);
+                const armAngle = (arm / arms) * Math.PI * 2;
+                const progress = Math.random();
+                const angle = armAngle + progress * Math.PI * 3.8;
+                const rad = 0.4 + progress * 9.5;
+                // Más scatter hacia afuera = aspecto de masa gruesa
+                const scatter = 0.12 + progress * 1.1;
+                pts.push(new THREE.Vector3(
+                    Math.cos(angle) * rad + (Math.random() - 0.5) * scatter,
+                    (Math.random() - 0.5) * 0.22,
+                    Math.sin(angle) * rad * 0.48 + (Math.random() - 0.5) * scatter * 0.5
+                ));
+            }
+            // Núcleo central denso
+            for (let i = 0; i < n * 0.12; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const r = Math.random() * 1.2;
+                pts.push(new THREE.Vector3(
+                    Math.cos(a) * r + (Math.random()-0.5)*0.3,
+                    (Math.random()-0.5)*0.1,
+                    Math.sin(a) * r * 0.45 + (Math.random()-0.5)*0.2
+                ));
+            }
+            return pts;
+        }
+        const ringPts = makeSpiralGalaxy(6000, 4);
+        const ringObj = makePoints(ringPts, () => {
+            const warm = Math.random();
+            return [1.0, 0.45 + warm * 0.35, 0.1 + warm * 0.15];
+        }, 0.18);
+        scene.add(ringObj);
+
+        // ── NEBULOSA (plano con textura canvas procedural) ───────
+        function makeNebulaTexture() {
+            const c = document.createElement('canvas');
+            c.width = c.height = 512;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0,0,512,512);
+            const blobs = [
+                {x:160,y:200,r:130,col:'rgba(30,60,180,0.18)'},
+                {x:320,y:280,r:110,col:'rgba(180,40,120,0.15)'},
+                {x:240,y:160,r:90, col:'rgba(80,20,160,0.12)'},
+                {x:370,y:180,r:80, col:'rgba(40,140,220,0.10)'},
+                {x:120,y:350,r:100,col:'rgba(200,60,100,0.10)'},
+            ];
+            blobs.forEach(b => {
+                const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+                g.addColorStop(0, b.col);
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(0,0,512,512);
+            });
+            return new THREE.CanvasTexture(c);
+        }
+        const nebGeo = new THREE.PlaneGeometry(28, 18);
+        const nebMat = new THREE.MeshBasicMaterial({
+            map: makeNebulaTexture(),
+            transparent: true, opacity: 0.55,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+        });
+        const nebula = new THREE.Mesh(nebGeo, nebMat);
+        nebula.position.z = -4;
+        scene.add(nebula);
+
+        // ── PLANETAS ─────────────────────────────────────────────
+        const planets = [];
+
+        function makePlanet({ x, y, z, radius, color1, color2, ringColor, hasMoon, tilt }) {
+            const group = new THREE.Group();
+            group.position.set(x, y, z);
+
+            // Textura procedural del planeta
+            const texSize = 256;
+            const pc = document.createElement('canvas');
+            pc.width = pc.height = texSize;
+            const ptx = pc.getContext('2d');
+
+            // Fondo base
+            const bg = ptx.createLinearGradient(0, 0, texSize, texSize);
+            bg.addColorStop(0, color1);
+            bg.addColorStop(0.5, color2);
+            bg.addColorStop(1, color1);
+            ptx.fillStyle = bg;
+            ptx.fillRect(0, 0, texSize, texSize);
+
+            // Bandas atmosféricas
+            for (let i = 0; i < 12; i++) {
+                const yb = (i / 12) * texSize;
+                const h = texSize / 14 + Math.random() * 10;
+                const alpha = 0.06 + Math.random() * 0.12;
+                ptx.fillStyle = `rgba(255,255,255,${alpha})`;
+                ptx.fillRect(0, yb, texSize, h);
+            }
+            // Manchas
+            for (let i = 0; i < 6; i++) {
+                const mx = Math.random() * texSize, my = Math.random() * texSize;
+                const mr = 8 + Math.random() * 18;
+                const mg = ptx.createRadialGradient(mx,my,0,mx,my,mr);
+                mg.addColorStop(0, `rgba(0,0,0,0.18)`);
+                mg.addColorStop(1, `rgba(0,0,0,0)`);
+                ptx.fillStyle = mg;
+                ptx.fillRect(0,0,texSize,texSize);
+            }
+            const planetTex = new THREE.CanvasTexture(pc);
+
+            // Esfera
+            const sphere = new THREE.Mesh(
+                new THREE.SphereGeometry(radius, 32, 32),
+                new THREE.MeshStandardMaterial({ map: planetTex, roughness: 0.8, metalness: 0.0 })
+            );
+            group.add(sphere);
+
+            // Atmósfera glow
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color(color1),
+                transparent: true, opacity: 0.13,
+                side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+            const glow = new THREE.Mesh(new THREE.SphereGeometry(radius * 1.22, 24, 24), glowMat);
+            group.add(glow);
+
+            // Anillo (solo algunos planetas)
+            if (ringColor) {
+                const ringGeo = new THREE.RingGeometry(radius * 1.35, radius * 2.1, 64);
+                // Gradiente en textura del anillo
+                const rc = document.createElement('canvas');
+                rc.width = 128; rc.height = 1;
+                const rctx = rc.getContext('2d');
+                const rg = rctx.createLinearGradient(0,0,128,0);
+                rg.addColorStop(0,   'rgba(0,0,0,0)');
+                rg.addColorStop(0.2, ringColor);
+                rg.addColorStop(0.5, ringColor);
+                rg.addColorStop(1,   'rgba(0,0,0,0)');
+                rctx.fillStyle = rg;
+                rctx.fillRect(0,0,128,1);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    map: new THREE.CanvasTexture(rc),
+                    transparent: true, opacity: 0.65,
+                    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2 + (tilt || 0.4);
+                group.add(ring);
+            }
+
+            // Luna
+            if (hasMoon) {
+                const moonGroup = new THREE.Group();
+                const moonR = radius * 0.28;
+                const moonMesh = new THREE.Mesh(
+                    new THREE.SphereGeometry(moonR, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 1.0 })
+                );
+                moonMesh.position.set(radius * 2.2, 0, 0);
+                moonGroup.add(moonMesh);
+                group.add(moonGroup);
+                group.userData.moonGroup = moonGroup;
+            }
+
+            scene.add(group);
+
+            // Luz puntual suave para iluminar planetas
+            const light = new THREE.PointLight(0xffffff, 0.6, 25);
+            light.position.set(x - 4, y + 3, z + 5);
+            scene.add(light);
+
+            planets.push({ group, sphere, tiltSpeed: 0.004 + Math.random() * 0.006 });
+            return group;
+        }
+
+        // Luz ambiental suave para que los planetas no queden negros
+        scene.add(new THREE.AmbientLight(0x334466, 0.8));
+
+        // Planeta 1 — azul hielo, con anillo, derecha arriba
+        makePlanet({ x: 5.5, y: 2.2, z: -1.5, radius: 0.72,
+            color1: '#1a4a8a', color2: '#3a8fcc',
+            ringColor: 'rgba(120,200,255,0.7)', hasMoon: true, tilt: 0.5 });
+
+        // Planeta 2 — rojizo, izquierda medio
+        makePlanet({ x: -5.8, y: 0.8, z: -1.0, radius: 0.55,
+            color1: '#7a2020', color2: '#c85030',
+            ringColor: null, hasMoon: false, tilt: 0 });
+
+        // Planeta 3 — dorado, derecha abajo
+        makePlanet({ x: 4.8, y: -2.8, z: -2.0, radius: 0.9,
+            color1: '#6a4010', color2: '#c8880a',
+            ringColor: 'rgba(220,160,60,0.6)', hasMoon: true, tilt: 0.35 });
+
+        // Planeta 4 — violeta, izquierda arriba
+        makePlanet({ x: -4.6, y: 2.6, z: -1.8, radius: 0.48,
+            color1: '#3a1060', color2: '#8844cc',
+            ringColor: null, hasMoon: false, tilt: 0 });
+
+        // Planeta 5 — verde esmeralda, centro abajo
+        makePlanet({ x: -1.2, y: -4.2, z: -1.5, radius: 0.42,
+            color1: '#0a3a20', color2: '#1a8a50',
+            ringColor: null, hasMoon: false, tilt: 0 });
+
+        // ── ESTRELLAS DE FONDO ───────────────────────────────────
+        (function() {
+            const n = 5000;
+            const pos = new Float32Array(n*3);
+            const col = new Float32Array(n*3);
+            for (let i = 0; i < n; i++) {
+                const r = 30 + Math.random()*60, t = Math.random()*Math.PI*2, p = Math.acos(2*Math.random()-1);
+                pos[i*3]   = r*Math.sin(p)*Math.cos(t);
+                pos[i*3+1] = r*Math.sin(p)*Math.sin(t)*0.55;
+                pos[i*3+2] = r*Math.cos(p) - 20;
+                const blue = Math.random() > 0.5;
+                if (blue) { col[i*3]=0.2+Math.random()*0.3; col[i*3+1]=0.4+Math.random()*0.3; col[i*3+2]=0.8+Math.random()*0.2; }
+                else      { col[i*3]=0.85+Math.random()*0.15; col[i*3+1]=0.3+Math.random()*0.3; col[i*3+2]=0.65+Math.random()*0.3; }
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+            geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+            scene.add(new THREE.Points(geo, new THREE.PointsMaterial({size:0.06, vertexColors:true, transparent:true, blending:THREE.AdditiveBlending})));
+        })();
+
+        // ── ESTRELLAS FUGACES ────────────────────────────────────
+        const shootingStars = [];
+        function spawnShootingStar() {
+            const geo = new THREE.BufferGeometry();
+            const n = 30;
+            const pos = new Float32Array(n*3);
+            const col = new Float32Array(n*3);
+            const ox = (Math.random()-0.5)*18, oy = 4 + Math.random()*4, oz = (Math.random()-0.5)*6;
+            const dx = (Math.random()-0.5)*0.25, dy = -0.18 - Math.random()*0.1, dz = (Math.random()-0.5)*0.05;
+            for (let i = 0; i < n; i++) {
+                const f = i/n;
+                pos[i*3]=ox+dx*i*0.4; pos[i*3+1]=oy+dy*i*0.4; pos[i*3+2]=oz+dz*i*0.4;
+                const a = 1 - f;
+                col[i*3]=1; col[i*3+1]=0.9+f*0.1; col[i*3+2]=0.8+f*0.2;
+            }
+            geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+            geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+            const mat = new THREE.PointsMaterial({ size:0.12, vertexColors:true, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false });
+            const pts = new THREE.Points(geo,mat);
+            pts.userData = { life: 0, maxLife: 80, dx, dy, dz };
+            scene.add(pts);
+            shootingStars.push(pts);
+        }
+        setInterval(() => { if (shootingStars.length < 3) spawnShootingStar(); }, 2800);
+
+        // ── ANIMACIÓN ────────────────────────────────────────────
+        let t = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            t += 0.012;
+
+            // Parpadeo sutil letras
+            const flicker = 0.08 + Math.sin(t*4.5)*0.015;
+            wordTu.material.size = flicker;
+            wordYo.material.size = flicker;
+
+            // Brillo texto siempre
+            wordSiempre.material.size = 0.10 + Math.sin(t*2.3 + 1)*0.012;
+            wordSiempre.material.opacity = 0.75 + Math.sin(t*1.8)*0.2;
+
+            // Latido corazón
+            const beat = 1 + Math.sin(t*4.4)*0.08;
+            heartObj.scale.setScalar(beat);
+            heartObj.position.y = 0.45 + Math.sin(t*4.4)*0.07;
+            heartObj.material.size = 0.09 + Math.sin(t*4.4)*0.025;
+
+            // Giro anillo
+            ringObj.rotation.y = t * 0.22;
+            ringObj.rotation.x = Math.sin(t * 0.12) * 0.14;
+            ringObj.position.y = -3.2 + Math.sin(t*0.4)*0.06;
+            ringObj.material.size = 0.16 + Math.sin(t * 1.1) * 0.03;
+
+            // Nebulosa lenta
+            nebula.rotation.z = t * 0.003;
+
+            // Estrellas fugaces
+            for (let i = shootingStars.length - 1; i >= 0; i--) {
+                const s = shootingStars[i];
+                s.userData.life++;
+                s.position.x += s.userData.dx * 0.35;
+                s.position.y += s.userData.dy * 0.35;
+                s.material.opacity = 1 - s.userData.life / s.userData.maxLife;
+                if (s.userData.life >= s.userData.maxLife) {
+                    scene.remove(s);
+                    shootingStars.splice(i, 1);
+                }
+            }
+
+            controls.update();
+            composer.render();
+        }
+        animate();
+
+        // ── RESIZE ───────────────────────────────────────────────
+        window.addEventListener('resize', () => {
+            camera.aspect = innerWidth / innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(innerWidth, innerHeight);
+            composer.setSize(innerWidth, innerHeight);
+        });
+    </script>
+</body>
+</html>
